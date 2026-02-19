@@ -11,6 +11,7 @@ body{
     margin:0;
     background: linear-gradient(135deg,#1e3c72,#2a5298);
 }
+
 .container{
     background:white;
     padding:25px;
@@ -21,7 +22,9 @@ body{
     box-shadow:0 10px 25px rgba(0,0,0,0.2);
     text-align:center;
 }
+
 h2{ color:#2a5298; }
+
 input,button,textarea,select{
     padding:10px;
     margin:6px 0;
@@ -29,6 +32,7 @@ input,button,textarea,select{
     border-radius:8px;
     border:1px solid #ccc;
 }
+
 button{
     background:#2a5298;
     color:white;
@@ -37,12 +41,17 @@ button{
     font-weight:bold;
     transition:0.3s;
 }
-button:hover{ background:#1e3c72; }
+
+button:hover{
+    background:#1e3c72;
+}
+
 .books-grid{
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
     gap:15px;
 }
+
 .book-card{
     background:#f9fbff;
     border-radius:12px;
@@ -50,13 +59,17 @@ button:hover{ background:#1e3c72; }
     padding:15px;
     transition:0.3s;
 }
+
 .book-card:hover{ transform:translateY(-5px); }
+
 .book-icon{ font-size:45px; }
+
 .book-title{
     font-weight:bold;
     margin:10px 0;
     color:#1e3c72;
 }
+
 .read-btn{
     background:#2b7cff;
     color:white;
@@ -66,6 +79,7 @@ button:hover{ background:#1e3c72; }
     margin:4px;
     display:inline-block;
 }
+
 .download-btn{
     background:#28a745;
     color:white;
@@ -75,6 +89,7 @@ button:hover{ background:#1e3c72; }
     margin:4px;
     display:inline-block;
 }
+
 .delete-btn{
     background:#dc3545;
     color:white;
@@ -84,6 +99,7 @@ button:hover{ background:#1e3c72; }
     margin-top:8px;
     cursor:pointer;
 }
+
 .chat-box{
     border:1px solid #ccc;
     height:250px;
@@ -93,13 +109,16 @@ button:hover{ background:#1e3c72; }
     background:#f9f9f9;
     border-radius:10px;
 }
+
 .message{
     margin:5px 0;
     padding:6px;
     border-radius:6px;
 }
+
 .teacher{ background:#d1e7ff; }
 .student{ background:#e7ffd1; }
+
 .hidden{ display:none; }
 </style>
 </head>
@@ -110,9 +129,9 @@ button:hover{ background:#1e3c72; }
 <h2>تسجيل الدخول</h2>
 <select id="role">
 <option value="teacher">الشيخ ضياء</option>
-<option value="student1">محمد</option>
-<option value="student2">عمار</option>
-<option value="student3">مالك</option>
+<option value="student1">مالك</option>
+<option value="student2">محمد</option>
+<option value="student3">عمار</option>
 </select><br>
 
 <input type="password" id="teacherPass" placeholder="كلمة سر المعلم (لو معلم)">
@@ -163,6 +182,7 @@ button:hover{ background:#1e3c72; }
 </div>
 
 <script>
+
 const teacherPassword = "الشيخ ضياء";
 let currentUser = "";
 
@@ -184,28 +204,28 @@ function login(){
         loadMeet();
         loadChat();
     }
+
     document.getElementById("loginBox").classList.add("hidden");
 }
 
 function logout(){ location.reload(); }
 
 function uploadPDF(){
-    const fileInput = document.getElementById("pdfInput");
+    const file = document.getElementById("pdfInput").files[0];
     const title = document.getElementById("bookTitle").value;
 
-    if(!fileInput.files[0] || !title) return alert("اكتب اسم الكتاب واختار الملف");
+    if(!file || !title) return alert("اكتب اسم الكتاب واختار الملف");
 
-    const file = fileInput.files[0];
-    const fileName = Date.now() + "_" + file.name;
-
-    let books = JSON.parse(localStorage.getItem("books")) || [];
-    books.push({ name:title, file:"uploads/" + file.name }); // الملف تحطه يدويًا في uploads
-    localStorage.setItem("books", JSON.stringify(books));
-    alert("تم رفع الكتاب (ضع الملف في فولدر uploads)");
-    document.getElementById("bookTitle").value="";
-    fileInput.value="";
-    loadManageBooks();
-    loadBooks();
+    const reader = new FileReader();
+    reader.onload = function(e){
+        let books = JSON.parse(localStorage.getItem("books")) || [];
+        books.push({ name:title, file:e.target.result });
+        localStorage.setItem("books", JSON.stringify(books));
+        alert("تم رفع الكتاب");
+        document.getElementById("bookTitle").value=""; 
+        loadManageBooks();
+    };
+    reader.readAsDataURL(file);
 }
 
 function loadBooks(){
@@ -220,7 +240,8 @@ function loadBooks(){
             <div class="book-title">${book.name}</div>
             <a href="${book.file}" target="_blank" class="read-btn">قراءة</a>
             <a href="${book.file}" download class="download-btn">تحميل</a>
-        </div>`;
+        </div>
+        `;
     });
 }
 
@@ -233,7 +254,8 @@ function loadManageBooks(){
         <div>
             ${book.name}
             <button class="delete-btn" onclick="deleteBook(${index})">حذف</button>
-        </div>`;
+        </div>
+        `;
     });
 }
 
@@ -242,7 +264,6 @@ function deleteBook(index){
     books.splice(index,1);
     localStorage.setItem("books", JSON.stringify(books));
     loadManageBooks();
-    loadBooks();
 }
 
 function saveMeet(){
@@ -294,6 +315,7 @@ function loadChat(){
 }
 
 setInterval(loadChat,2000);
+
 </script>
 </body>
 </html>
