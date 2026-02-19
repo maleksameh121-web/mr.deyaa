@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>منصة تعليمية</title>
+
+<style>
+body{
+    font-family: 'Cairo', sans-serif;
+    direction: rtl;
+    margin:0;
+    background: linear-gradient(135deg,#1e3c72,#2a5298);
+}
+.container{
+    background:white;
+    padding:25px;
+    margin:30px auto;
+    width:90%;
+    max-width:900px;
+    border-radius:15px;
+    box-shadow:0 10px 25px rgba(0,0,0,0.2);
+    text-align:center;
+}
+h2{ color:#2a5298; }
+input,button,textarea,select{
+    padding:10px;
+    margin:6px 0;
+    width:90%;
+    border-radius:8px;
+    border:1px solid #ccc;
+}
+button{
+    background:#2a5298;
+    color:white;
+    border:none;
+    cursor:pointer;
+    font-weight:bold;
+    transition:0.3s;
+}
+button:hover{ background:#1e3c72; }
+.books-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:15px;
+}
+.book-card{
+    background:#f9fbff;
+    border-radius:12px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.1);
+    padding:15px;
+    transition:0.3s;
+}
+.book-card:hover{ transform:translateY(-5px); }
+.book-icon{ font-size:45px; }
+.book-title{
+    font-weight:bold;
+    margin:10px 0;
+    color:#1e3c72;
+}
+.read-btn{
+    background:#2b7cff;
+    color:white;
+    padding:6px 10px;
+    border-radius:6px;
+    text-decoration:none;
+    margin:4px;
+    display:inline-block;
+}
+.download-btn{
+    background:#28a745;
+    color:white;
+    padding:6px 10px;
+    border-radius:6px;
+    text-decoration:none;
+    margin:4px;
+    display:inline-block;
+}
+.delete-btn{
+    background:#dc3545;
+    color:white;
+    padding:6px 10px;
+    border-radius:6px;
+    border:none;
+    margin-top:8px;
+    cursor:pointer;
+}
+.chat-box{
+    border:1px solid #ccc;
+    height:250px;
+    overflow-y:auto;
+    padding:10px;
+    text-align:right;
+    background:#f9f9f9;
+    border-radius:10px;
+}
+.message{
+    margin:5px 0;
+    padding:6px;
+    border-radius:6px;
+}
+.teacher{ background:#d1e7ff; }
+.student{ background:#e7ffd1; }
+.hidden{ display:none; }
+</style>
+</head>
+
+<body>
+
+<div class="container" id="loginBox">
+<h2>تسجيل الدخول</h2>
+<select id="role">
+<option value="teacher">الشيخ ضياء</option>
+<option value="student1">محمد</option>
+<option value="student2">عمار</option>
+<option value="student3">مالك</option>
+</select><br>
+
+<input type="password" id="teacherPass" placeholder="كلمة سر المعلم (لو معلم)">
+<br>
+<button onclick="login()">دخول</button>
+</div>
+
+<!-- لوحة المعلم -->
+<div class="container hidden" id="teacherPanel">
+<h2>لوحة المعلم</h2>
+
+<h3>رفع كتاب PDF</h3>
+<input type="text" id="bookTitle" placeholder="اكتب اسم الكتاب">
+<input type="file" id="pdfInput" accept="application/pdf">
+<button onclick="uploadPDF()">رفع</button>
+
+<h3>إدارة الكتب</h3>
+<div id="manageBooks"></div>
+
+<h3>رابط Google Meet</h3>
+<input type="text" id="meetLink" placeholder="حط رابط الميت هنا">
+<button onclick="saveMeet()">حفظ الرابط</button>
+
+<h3>الشات</h3>
+<div class="chat-box" id="chat"></div>
+<textarea id="chatInput"></textarea><br>
+<button onclick="sendMessage()">إرسال</button>
+
+<button onclick="logout()">خروج</button>
+</div>
+
+<!-- لوحة الطالب -->
+<div class="container hidden" id="studentPanel">
+<h2>لوحة الطالب</h2>
+
+<h3>الكتب</h3>
+<div id="books" class="books-grid"></div>
+
+<h3>Google Meet</h3>
+<div id="meetSection"></div>
+
+<h3>الشات</h3>
+<div class="chat-box" id="chatStudent"></div>
+<textarea id="chatInputStudent"></textarea><br>
+<button onclick="sendMessage()">إرسال</button>
+
+<button onclick="logout()">خروج</button>
+</div>
+
+<script>
+const teacherPassword = "الشيخ ضياء";
+let currentUser = "";
+
+function login(){
+    currentUser = document.getElementById("role").value;
+
+    if(currentUser === "teacher"){
+        let pass = document.getElementById("teacherPass").value;
+        if(pass !== teacherPassword){
+            alert("كلمة السر غلط");
+            return;
+        }
+        document.getElementById("teacherPanel").classList.remove("hidden");
+        loadManageBooks();
+        loadChat();
+    }else{
+        document.getElementById("studentPanel").classList.remove("hidden");
+        loadBooks();
+        loadMeet();
+        loadChat();
+    }
+    document.getElementById("loginBox").classList.add("hidden");
+}
+
+function logout(){ location.reload(); }
+
+function uploadPDF(){
+    const fileInput = document.getElementById("pdfInput");
+    const title = document.getElementById("bookTitle").value;
+
+    if(!fileInput.files[0] || !title) return alert("اكتب اسم الكتاب واختار الملف");
+
+    const file = fileInput.files[0];
+    const fileName = Date.now() + "_" + file.name;
+
+    let books = JSON.parse(localStorage.getItem("books")) || [];
+    books.push({ name:title, file:"uploads/" + file.name }); // الملف تحطه يدويًا في uploads
+    localStorage.setItem("books", JSON.stringify(books));
+    alert("تم رفع الكتاب (ضع الملف في فولدر uploads)");
+    document.getElementById("bookTitle").value="";
+    fileInput.value="";
+    loadManageBooks();
+    loadBooks();
+}
+
+function loadBooks(){
+    let books = JSON.parse(localStorage.getItem("books")) || [];
+    let booksDiv = document.getElementById("books");
+    booksDiv.innerHTML = "";
+
+    books.forEach(book=>{
+        booksDiv.innerHTML += `
+        <div class="book-card">
+            <div class="book-icon">📘</div>
+            <div class="book-title">${book.name}</div>
+            <a href="${book.file}" target="_blank" class="read-btn">قراءة</a>
+            <a href="${book.file}" download class="download-btn">تحميل</a>
+        </div>`;
+    });
+}
+
+function loadManageBooks(){
+    let books = JSON.parse(localStorage.getItem("books")) || [];
+    let div = document.getElementById("manageBooks");
+    div.innerHTML="";
+    books.forEach((book,index)=>{
+        div.innerHTML += `
+        <div>
+            ${book.name}
+            <button class="delete-btn" onclick="deleteBook(${index})">حذف</button>
+        </div>`;
+    });
+}
+
+function deleteBook(index){
+    let books = JSON.parse(localStorage.getItem("books")) || [];
+    books.splice(index,1);
+    localStorage.setItem("books", JSON.stringify(books));
+    loadManageBooks();
+    loadBooks();
+}
+
+function saveMeet(){
+    let link = document.getElementById("meetLink").value;
+    localStorage.setItem("meet", link);
+    alert("تم حفظ الرابط");
+}
+
+function loadMeet(){
+    let link = localStorage.getItem("meet");
+    if(link){
+        document.getElementById("meetSection").innerHTML =
+        `<a href="${link}" target="_blank" class="read-btn">دخول الحصة</a>`;
+    }
+}
+
+function sendMessage(){
+    let text;
+    if(currentUser === "teacher"){
+        text = document.getElementById("chatInput").value;
+        document.getElementById("chatInput").value="";
+    }else{
+        text = document.getElementById("chatInputStudent").value;
+        document.getElementById("chatInputStudent").value="";
+    }
+
+    if(!text) return;
+
+    let messages = JSON.parse(localStorage.getItem("chat")) || [];
+    messages.push({user: currentUser, message: text});
+    localStorage.setItem("chat", JSON.stringify(messages));
+    loadChat();
+}
+
+function loadChat(){
+    let messages = JSON.parse(localStorage.getItem("chat")) || [];
+    let teacherBox = document.getElementById("chat");
+    let studentBox = document.getElementById("chatStudent");
+
+    if(teacherBox) teacherBox.innerHTML="";
+    if(studentBox) studentBox.innerHTML="";
+
+    messages.forEach(m=>{
+        let className = m.user === "teacher" ? "teacher" : "student";
+        let html = `<div class="message ${className}"><b>${m.user}:</b> ${m.message}</div>`;
+        if(teacherBox) teacherBox.innerHTML += html;
+        if(studentBox) studentBox.innerHTML += html;
+    });
+}
+
+setInterval(loadChat,2000);
+</script>
+</body>
+</html>
