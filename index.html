@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Beast Platform V10 12H</title>
+<title>Beast Platform V12 - Google Drive</title>
 
 <style>
 body{
@@ -13,7 +13,6 @@ body{
     background: linear-gradient(135deg,#0f2027,#203a43,#2c5364);
     color:white;
 }
-
 nav{
     background:black;
     padding:10px;
@@ -33,10 +32,8 @@ nav button{
     font-weight:bold;
     cursor:pointer;
 }
-
 section{display:none;padding:15px}
 .active{display:block}
-
 .card{
     background:white;
     color:black;
@@ -44,7 +41,6 @@ section{display:none;padding:15px}
     margin:10px 0;
     border-radius:12px;
 }
-
 input{
     width:100%;
     padding:8px;
@@ -52,7 +48,6 @@ input{
     border-radius:8px;
     border:none;
 }
-
 button{
     padding:8px 12px;
     border:none;
@@ -61,16 +56,9 @@ button{
     margin-top:5px;
     font-weight:bold;
 }
-
 .action{background:limegreen;}
 .delete{background:red;color:white;}
 .openBtn{background:#203a43;color:white;}
-
-video{
-    width:100%;
-    border-radius:10px;
-}
-
 @media(min-width:768px){
 nav button{
     flex:none;
@@ -79,7 +67,6 @@ nav button{
 }
 </style>
 </head>
-
 <body>
 
 <nav>
@@ -94,7 +81,7 @@ nav button{
 </nav>
 
 <section id="home" class="active">
-<h2>🔥 Beast Education Platform 🔥</h2>
+<h2>🔥 Beast Education Platform V12 🔥</h2>
 </section>
 
 <section id="books"><h2>📚 الكتب</h2><div id="bookList"></div></section>
@@ -109,17 +96,11 @@ nav button{
 
 <section id="chatPage">
 <h2>💬 الدردشة</h2>
-
-<!-- حقل اسم الطالب فوق الدردشة -->
 <div style="margin-bottom:10px;">
 <input type="text" id="studentNameInput" placeholder="اكتب اسمك">
 <button onclick="saveStudentName()">حفظ الاسم</button>
 </div>
-
-<!-- صندوق الدردشة -->
 <div id="chatBox" style="height:300px;overflow:auto;border:1px solid #ccc;margin-bottom:10px;padding:10px;"></div>
-
-<!-- حقل الرسالة -->
 <input type="text" id="chatMessage" placeholder="اكتب رسالة">
 <button onclick="sendMessage()">إرسال</button>
 </section>
@@ -134,31 +115,31 @@ nav button{
 <section id="panel">
 <h2>👑 لوحة المعلم</h2>
 
-<h3>رفع كتاب PDF</h3>
-<input type="text" id="bookTitle">
-<input type="file" id="bookFile" accept="application/pdf">
-<button class="action" onclick="saveFile('books','bookTitle','bookFile')">رفع</button>
+<h3>إضافة كتاب PDF من Google Drive</h3>
+<input type="text" id="bookTitle" placeholder="اسم الكتاب">
+<input type="text" id="bookLink" placeholder="رابط Google Drive للكتاب">
+<button class="action" onclick="saveLink('books','bookTitle','bookLink')">حفظ الكتاب</button>
 
-<h3>رفع ملخص PDF</h3>
-<input type="text" id="sumTitle">
-<input type="file" id="sumFile" accept="application/pdf">
-<button class="action" onclick="saveFile('summaries','sumTitle','sumFile')">رفع</button>
+<h3>إضافة ملخص PDF من Google Drive</h3>
+<input type="text" id="sumTitle" placeholder="اسم الملخص">
+<input type="text" id="sumLink" placeholder="رابط Google Drive للملخص">
+<button class="action" onclick="saveLink('summaries','sumTitle','sumLink')">حفظ الملخص</button>
 
-<h3>رفع فيديو</h3>
-<input type="text" id="vidTitle">
-<input type="file" id="vidFile" accept="video/*">
-<button class="action" onclick="saveFile('videos','vidTitle','vidFile')">رفع</button>
+<h3>إضافة فيديو من Google Drive</h3>
+<input type="text" id="vidTitle" placeholder="اسم الفيديو">
+<input type="text" id="vidLink" placeholder="رابط Google Drive للفيديو">
+<button class="action" onclick="saveLink('videos','vidTitle','vidLink')">حفظ الفيديو</button>
 
-<h3>إضافة عمل طالب</h3>
-<input type="text" id="studentName">
-<input type="text" id="workTitle">
-<input type="file" id="workFile" accept=".pdf,image/*">
-<button class="action" onclick="saveStudentWork()">رفع</button>
+<h3>إضافة عمل طالب من Google Drive</h3>
+<input type="text" id="studentName" placeholder="اسم الطالب">
+<input type="text" id="workTitle" placeholder="اسم العمل">
+<input type="text" id="workLink" placeholder="رابط Google Drive للعمل">
+<button class="action" onclick="saveStudentWorkLink()">حفظ العمل</button>
 
 <hr>
 
 <h3>🎥 إدارة روابط الاجتماعات</h3>
-<input type="text" id="meetLink" placeholder="حط لينك الاجتماع هنا">
+<input type="text" id="meetLink" placeholder="رابط الاجتماع">
 <button class="action" onclick="saveMeet()">💾 حفظ الرابط</button>
 <div id="teacherMeetList"></div>
 
@@ -176,8 +157,7 @@ nav button{
 
 <script>
 let db;
-let request=indexedDB.open("BeastDB_V10",1);
-
+let request=indexedDB.open("BeastDB_V12",1);
 request.onupgradeneeded=function(e){
     db=e.target.result;
     ["books","summaries","videos","studentWorks","chat","meet"].forEach(store=>{
@@ -185,17 +165,16 @@ request.onupgradeneeded=function(e){
             db.createObjectStore(store,{keyPath:"id",autoIncrement:true});
     });
 };
-
 request.onsuccess=function(e){
     db=e.target.result;
     refreshAll();
 };
 
 function refreshAll(){
-    loadDisplay("books","bookList");
-    loadDisplay("summaries","summaryList");
-    loadDisplay("videos","videoList");
-    loadDisplay("studentWorks","studentList");
+    loadDisplay('books','bookList');
+    loadDisplay('summaries','summaryList');
+    loadDisplay('videos','videoList');
+    loadDisplay('studentWorks','studentList');
     loadMeet();
     loadChat();
     loadManage();
@@ -216,42 +195,30 @@ function login(){
         document.getElementById("msg").innerText="❌ خطأ";
     }
 }
+function logout(){isTeacher=false; show("home");}
 
-function logout(){
-    isTeacher=false;
-    show("home");
-}
-
-function saveFile(store,titleId,fileId){
+// حفظ الروابط من Google Drive
+function saveLink(store,titleId,linkId){
     let title=document.getElementById(titleId).value;
-    let file=document.getElementById(fileId).files[0];
-    if(!file||!title) return alert("اكمل البيانات");
-
-    let reader=new FileReader();
-    reader.onload=function(){
-        let tx=db.transaction(store,"readwrite");
-        tx.objectStore(store).add({title:title,data:reader.result});
-        tx.oncomplete=refreshAll;
-    };
-    reader.readAsDataURL(file);
+    let link=document.getElementById(linkId).value;
+    if(!title||!link) return alert("اكمل البيانات");
+    let tx=db.transaction(store,"readwrite");
+    tx.objectStore(store).add({title:title,link:link});
+    tx.oncomplete=refreshAll;
 }
 
-function saveStudentWork(){
+// حفظ عمل طالب من Google Drive
+function saveStudentWorkLink(){
     let name=document.getElementById("studentName").value;
     let title=document.getElementById("workTitle").value;
-    let file=document.getElementById("workFile").files[0];
-    if(!file||!name||!title) return;
-
-    let reader=new FileReader();
-    reader.onload=function(){
-        let tx=db.transaction("studentWorks","readwrite");
-        tx.objectStore("studentWorks").add({student:name,title:title,data:reader.result});
-        tx.oncomplete=refreshAll;
-    };
-    reader.readAsDataURL(file);
+    let link=document.getElementById("workLink").value;
+    if(!name||!title||!link) return alert("اكمل البيانات");
+    let tx=db.transaction("studentWorks","readwrite");
+    tx.objectStore("studentWorks").add({student:name,title:title,link:link});
+    tx.oncomplete=refreshAll;
 }
 
-// Google Meet
+// روابط Google Meet
 function saveMeet(){
     let link=document.getElementById("meetLink").value;
     if(!link) return;
@@ -259,7 +226,6 @@ function saveMeet(){
     tx.objectStore("meet").add({link:link});
     loadMeet();
 }
-
 function loadMeet(){
     let tx=db.transaction("meet","readonly");
     let request=tx.objectStore("meet").getAll();
@@ -270,15 +236,13 @@ function loadMeet(){
         if(studentBox) studentBox.innerHTML="";
         request.result.forEach(item=>{
             if(teacherBox){
-                teacherBox.innerHTML+=`
-                <div class="card">
+                teacherBox.innerHTML+=`<div class="card">
                     <a href="${item.link}" target="_blank">${item.link}</a>
                     <button class="delete" onclick="deleteItem('meet',${item.id})">❌ حذف</button>
                 </div>`;
             }
             if(studentBox){
-                studentBox.innerHTML+=`
-                <div class="card">
+                studentBox.innerHTML+=`<div class="card">
                     <a href="${item.link}" target="_blank">🎥 دخول الاجتماع</a>
                 </div>`;
             }
@@ -286,20 +250,18 @@ function loadMeet(){
     }
 }
 
-// Chat
+// الدردشة
 function saveStudentName(){
     let name=document.getElementById("studentNameInput").value;
     if(!name) return;
     localStorage.setItem("studentName",name);
     alert("تم حفظ الاسم ✅");
 }
-
 function sendMessage(){
     let name=localStorage.getItem("studentName");
     let message=document.getElementById("chatMessage").value;
     if(!name){alert("اكتب اسمك أولاً 👤"); return;}
     if(!message) return;
-
     let now = new Date();
     let hours = now.getHours();
     let minutes = now.getMinutes().toString().padStart(2,'0');
@@ -307,13 +269,11 @@ function sendMessage(){
     hours = hours % 12;
     hours = hours ? hours : 12;
     let time = hours + ":" + minutes + " " + ampm;
-
     let tx=db.transaction("chat","readwrite");
     tx.objectStore("chat").add({name:name,message:message,time:time});
     document.getElementById("chatMessage").value="";
     loadChat();
 }
-
 function loadChat(){
     let tx=db.transaction("chat","readonly");
     let request=tx.objectStore("chat").getAll();
@@ -321,16 +281,13 @@ function loadChat(){
         let box=document.getElementById("chatBox");
         box.innerHTML="";
         request.result.forEach(item=>{
-            box.innerHTML+=`
-            <div class="card">
-                <strong>${item.name} (${item.time}):</strong> ${item.message}
-            </div>`;
+            box.innerHTML+=`<div class="card"><strong>${item.name} (${item.time}):</strong> ${item.message}</div>`;
         });
         box.scrollTop=box.scrollHeight;
     };
 }
 
-// Delete item (for everything)
+// حذف العناصر
 function deleteItem(store,id){
     if(!confirm("تأكيد الحذف؟")) return;
     let tx=db.transaction(store,"readwrite");
@@ -338,7 +295,7 @@ function deleteItem(store,id){
     tx.oncomplete=refreshAll;
 }
 
-// Display content for students
+// عرض المحتوى للطلاب
 function loadDisplay(store,containerId){
     let tx=db.transaction(store,"readonly");
     let request=tx.objectStore(store).getAll();
@@ -346,17 +303,19 @@ function loadDisplay(store,containerId){
         let container=document.getElementById(containerId);
         container.innerHTML="";
         request.result.forEach(item=>{
-            if(store==="videos"){
-                container.innerHTML+=`<div class="card"><h3>${item.title}</h3><video controls src="${item.data}"></video></div>`;
+            if(store==="videos"||store==="books"||store==="summaries"){
+                container.innerHTML+=`<div class="card"><h3>${item.title}</h3>
+                <button class="openBtn" onclick="window.open('${item.link}','_blank')">فتح الملف</button></div>`;
             } else if(store==="studentWorks"){
-                container.innerHTML+=`<div class="card"><h3>${item.student}</h3><p>${item.title}</p><button class="openBtn" onclick="openFile('${item.data}')">فتح العمل</button></div>`;
-            } else {
-                container.innerHTML+=`<div class="card"><h3>${item.title}</h3><button class="openBtn" onclick="openFile('${item.data}')">فتح الملف</button></div>`;
+                container.innerHTML+=`<div class="card"><h3>${item.student}</h3>
+                <p>${item.title}</p>
+                <button class="openBtn" onclick="window.open('${item.link}','_blank')">فتح العمل</button></div>`;
             }
         });
     }
 }
 
+// لوحة الإدارة
 function loadManage(){
     loadManageStore("books","manageBooks");
     loadManageStore("summaries","manageSummaries");
@@ -364,7 +323,6 @@ function loadManage(){
     loadManageStore("studentWorks","manageStudents");
     loadManageChat();
 }
-
 function loadManageStore(store,containerId){
     let tx=db.transaction(store,"readonly");
     let request=tx.objectStore(store).getAll();
@@ -372,15 +330,13 @@ function loadManageStore(store,containerId){
         let container=document.getElementById(containerId);
         container.innerHTML="";
         request.result.forEach(item=>{
-            container.innerHTML+=`
-            <div class="card">
-                <h4>${store==="studentWorks"?item.student+" - "+item.title:item.title}</h4>
-                <button class="delete" onclick="deleteItem('${store}',${item.id})">❌ حذف</button>
+            container.innerHTML+=`<div class="card">
+            <h4>${store==="studentWorks"?item.student+" - "+item.title:item.title}</h4>
+            <button class="delete" onclick="deleteItem('${store}',${item.id})">❌ حذف</button>
             </div>`;
         });
     }
 }
-
 function loadManageChat(){
     let tx=db.transaction("chat","readonly");
     let request=tx.objectStore("chat").getAll();
@@ -388,28 +344,13 @@ function loadManageChat(){
         let container=document.getElementById("manageChat");
         container.innerHTML="";
         request.result.forEach(item=>{
-            container.innerHTML+=`
-            <div class="card">
-                <strong>${item.name} (${item.time}):</strong> ${item.message}<br>
-                <button class="delete" onclick="deleteItem('chat',${item.id})">❌ حذف</button>
+            container.innerHTML+=`<div class="card">
+            <strong>${item.name} (${item.time}):</strong> ${item.message}<br>
+            <button class="delete" onclick="deleteItem('chat',${item.id})">❌ حذف</button>
             </div>`;
         });
     }
 }
-
-// Open PDF/video/image
-function openFile(data){
-    let arr=data.split(',');
-    let mime=arr[0].match(/:(.*?);/)[1];
-    let bstr=atob(arr[1]);
-    let n=bstr.length;
-    let u8arr=new Uint8Array(n);
-    while(n--){u8arr[n]=bstr.charCodeAt(n);}
-    let blob=new Blob([u8arr],{type:mime});
-    let url=URL.createObjectURL(blob);
-    window.open(url,"_blank");
-}
-
 </script>
 </body>
 </html>
