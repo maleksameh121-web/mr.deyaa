@@ -3,68 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Beast Platform V12 - Google Drive</title>
-
+<title>Beast Platform V13 Ultimate</title>
 <style>
-body{
-    font-family: Arial;
-    direction: rtl;
-    margin:0;
-    background: linear-gradient(135deg,#0f2027,#203a43,#2c5364);
-    color:white;
-}
-nav{
-    background:black;
-    padding:10px;
-    display:flex;
-    flex-wrap:wrap;
-    justify-content:center;
-    gap:6px;
-}
-nav button{
-    flex:1 1 40%;
-    max-width:48%;
-    padding:10px;
-    border:none;
-    border-radius:10px;
-    background:cyan;
-    color:black;
-    font-weight:bold;
-    cursor:pointer;
-}
-section{display:none;padding:15px}
-.active{display:block}
-.card{
-    background:white;
-    color:black;
-    padding:15px;
-    margin:10px 0;
-    border-radius:12px;
-}
-input{
-    width:100%;
-    padding:8px;
-    margin:5px 0;
-    border-radius:8px;
-    border:none;
-}
-button{
-    padding:8px 12px;
-    border:none;
-    border-radius:8px;
-    cursor:pointer;
-    margin-top:5px;
-    font-weight:bold;
-}
+body{font-family:Arial;direction:rtl;margin:0;background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);color:white;}
+nav{background:black;padding:10px;display:flex;flex-wrap:wrap;justify-content:center;gap:6px;}
+nav button{flex:1 1 40%;max-width:48%;padding:10px;border:none;border-radius:10px;background:cyan;color:black;font-weight:bold;cursor:pointer;}
+section{display:none;padding:15px;}
+.active{display:block;}
+.card{background:white;color:black;padding:15px;margin:10px 0;border-radius:12px;}
+input{width:100%;padding:8px;margin:5px 0;border-radius:8px;border:none;}
+button{padding:8px 12px;border:none;border-radius:8px;cursor:pointer;margin-top:5px;font-weight:bold;}
 .action{background:limegreen;}
 .delete{background:red;color:white;}
 .openBtn{background:#203a43;color:white;}
-@media(min-width:768px){
-nav button{
-    flex:none;
-    max-width:none;
-}
-}
+@media(min-width:768px){nav button{flex:none;max-width:none;}}
 </style>
 </head>
 <body>
@@ -80,19 +32,14 @@ nav button{
 <button onclick="show('login')">دخول المعلم</button>
 </nav>
 
-<section id="home" class="active">
-<h2>🔥 Beast Education Platform V12 🔥</h2>
-</section>
+<section id="home" class="active"><h2>🔥 Beast Platform V13 Ultimate 🔥</h2></section>
 
 <section id="books"><h2>📚 الكتب</h2><div id="bookList"></div></section>
 <section id="summaries"><h2>📝 الملخصات</h2><div id="summaryList"></div></section>
 <section id="videos"><h2>🎥 الفيديوهات</h2><div id="videoList"></div></section>
 <section id="studentWorks"><h2>👨‍🎓 أعمال الطلاب</h2><div id="studentList"></div></section>
 
-<section id="meetPage">
-<h2>🎥 الاجتماع المباشر</h2>
-<div id="studentMeet"></div>
-</section>
+<section id="meetPage"><h2>🎥 الاجتماع المباشر</h2><div id="studentMeet"></div></section>
 
 <section id="chatPage">
 <h2>💬 الدردشة</h2>
@@ -157,7 +104,7 @@ nav button{
 
 <script>
 let db;
-let request=indexedDB.open("BeastDB_V12",1);
+let request=indexedDB.open("BeastDB_V13",1);
 request.onupgradeneeded=function(e){
     db=e.target.result;
     ["books","summaries","videos","studentWorks","chat","meet"].forEach(store=>{
@@ -165,10 +112,7 @@ request.onupgradeneeded=function(e){
             db.createObjectStore(store,{keyPath:"id",autoIncrement:true});
     });
 };
-request.onsuccess=function(e){
-    db=e.target.result;
-    refreshAll();
-};
+request.onsuccess=function(e){db=e.target.result;refreshAll();};
 
 function refreshAll(){
     loadDisplay('books','bookList');
@@ -180,24 +124,12 @@ function refreshAll(){
     loadManage();
 }
 
-function show(id){
-    document.querySelectorAll("section").forEach(s=>s.classList.remove("active"));
-    document.getElementById(id).classList.add("active");
-}
+function show(id){document.querySelectorAll("section").forEach(s=>s.classList.remove("active"));document.getElementById(id).classList.add("active");}
 
 let isTeacher=false;
-function login(){
-    if(document.getElementById("pass").value==="1234"){
-        isTeacher=true;
-        show("panel");
-        refreshAll();
-    }else{
-        document.getElementById("msg").innerText="❌ خطأ";
-    }
-}
+function login(){if(document.getElementById("pass").value==="1234"){isTeacher=true;show("panel");refreshAll();}else{document.getElementById("msg").innerText="❌ خطأ";}}
 function logout(){isTeacher=false; show("home");}
 
-// حفظ الروابط من Google Drive
 function saveLink(store,titleId,linkId){
     let title=document.getElementById(titleId).value;
     let link=document.getElementById(linkId).value;
@@ -207,7 +139,6 @@ function saveLink(store,titleId,linkId){
     tx.oncomplete=refreshAll;
 }
 
-// حفظ عمل طالب من Google Drive
 function saveStudentWorkLink(){
     let name=document.getElementById("studentName").value;
     let title=document.getElementById("workTitle").value;
@@ -218,7 +149,6 @@ function saveStudentWorkLink(){
     tx.oncomplete=refreshAll;
 }
 
-// روابط Google Meet
 function saveMeet(){
     let link=document.getElementById("meetLink").value;
     if(!link) return;
@@ -235,28 +165,13 @@ function loadMeet(){
         if(teacherBox) teacherBox.innerHTML="";
         if(studentBox) studentBox.innerHTML="";
         request.result.forEach(item=>{
-            if(teacherBox){
-                teacherBox.innerHTML+=`<div class="card">
-                    <a href="${item.link}" target="_blank">${item.link}</a>
-                    <button class="delete" onclick="deleteItem('meet',${item.id})">❌ حذف</button>
-                </div>`;
-            }
-            if(studentBox){
-                studentBox.innerHTML+=`<div class="card">
-                    <a href="${item.link}" target="_blank">🎥 دخول الاجتماع</a>
-                </div>`;
-            }
+            if(teacherBox){teacherBox.innerHTML+=`<div class="card"><a href="${item.link}" target="_blank">${item.link}</a> <button class="delete" onclick="deleteItem('meet',${item.id})">❌ حذف</button></div>`;}
+            if(studentBox){studentBox.innerHTML+=`<div class="card"><a href="${item.link}" target="_blank">🎥 دخول الاجتماع</a></div>`;}
         });
     }
 }
 
-// الدردشة
-function saveStudentName(){
-    let name=document.getElementById("studentNameInput").value;
-    if(!name) return;
-    localStorage.setItem("studentName",name);
-    alert("تم حفظ الاسم ✅");
-}
+function saveStudentName(){let name=document.getElementById("studentNameInput").value;if(!name) return;localStorage.setItem("studentName",name);alert("تم حفظ الاسم ✅");}
 function sendMessage(){
     let name=localStorage.getItem("studentName");
     let message=document.getElementById("chatMessage").value;
@@ -274,28 +189,10 @@ function sendMessage(){
     document.getElementById("chatMessage").value="";
     loadChat();
 }
-function loadChat(){
-    let tx=db.transaction("chat","readonly");
-    let request=tx.objectStore("chat").getAll();
-    request.onsuccess=function(){
-        let box=document.getElementById("chatBox");
-        box.innerHTML="";
-        request.result.forEach(item=>{
-            box.innerHTML+=`<div class="card"><strong>${item.name} (${item.time}):</strong> ${item.message}</div>`;
-        });
-        box.scrollTop=box.scrollHeight;
-    };
-}
+function loadChat(){let tx=db.transaction("chat","readonly");let request=tx.objectStore("chat").getAll();request.onsuccess=function(){let box=document.getElementById("chatBox");box.innerHTML="";request.result.forEach(item=>{box.innerHTML+=`<div class="card"><strong>${item.name} (${item.time}):</strong> ${item.message}</div>`;});box.scrollTop=box.scrollHeight;}}
 
-// حذف العناصر
-function deleteItem(store,id){
-    if(!confirm("تأكيد الحذف؟")) return;
-    let tx=db.transaction(store,"readwrite");
-    tx.objectStore(store).delete(id);
-    tx.oncomplete=refreshAll;
-}
+function deleteItem(store,id){if(!confirm("تأكيد الحذف؟")) return; let tx=db.transaction(store,"readwrite"); tx.objectStore(store).delete(id); tx.oncomplete=refreshAll;}
 
-// عرض المحتوى للطلاب
 function loadDisplay(store,containerId){
     let tx=db.transaction(store,"readonly");
     let request=tx.objectStore(store).getAll();
@@ -304,18 +201,14 @@ function loadDisplay(store,containerId){
         container.innerHTML="";
         request.result.forEach(item=>{
             if(store==="videos"||store==="books"||store==="summaries"){
-                container.innerHTML+=`<div class="card"><h3>${item.title}</h3>
-                <button class="openBtn" onclick="window.open('${item.link}','_blank')">فتح الملف</button></div>`;
+                container.innerHTML+=`<div class="card"><h3>${item.title}</h3><button class="openBtn" onclick="window.open('${item.link}','_blank')">فتح الملف</button></div>`;
             } else if(store==="studentWorks"){
-                container.innerHTML+=`<div class="card"><h3>${item.student}</h3>
-                <p>${item.title}</p>
-                <button class="openBtn" onclick="window.open('${item.link}','_blank')">فتح العمل</button></div>`;
+                container.innerHTML+=`<div class="card"><h3>${item.student}</h3><p>${item.title}</p><button class="openBtn" onclick="window.open('${item.link}','_blank')">فتح العمل</button></div>`;
             }
         });
     }
 }
 
-// لوحة الإدارة
 function loadManage(){
     loadManageStore("books","manageBooks");
     loadManageStore("summaries","manageSummaries");
@@ -330,10 +223,7 @@ function loadManageStore(store,containerId){
         let container=document.getElementById(containerId);
         container.innerHTML="";
         request.result.forEach(item=>{
-            container.innerHTML+=`<div class="card">
-            <h4>${store==="studentWorks"?item.student+" - "+item.title:item.title}</h4>
-            <button class="delete" onclick="deleteItem('${store}',${item.id})">❌ حذف</button>
-            </div>`;
+            container.innerHTML+=`<div class="card"><h4>${store==="studentWorks"?item.student+" - "+item.title:item.title}</h4><button class="delete" onclick="deleteItem('${store}',${item.id})">❌ حذف</button></div>`;
         });
     }
 }
@@ -344,10 +234,7 @@ function loadManageChat(){
         let container=document.getElementById("manageChat");
         container.innerHTML="";
         request.result.forEach(item=>{
-            container.innerHTML+=`<div class="card">
-            <strong>${item.name} (${item.time}):</strong> ${item.message}<br>
-            <button class="delete" onclick="deleteItem('chat',${item.id})">❌ حذف</button>
-            </div>`;
+            container.innerHTML+=`<div class="card"><strong>${item.name} (${item.time}):</strong> ${item.message}<br><button class="delete" onclick="deleteItem('chat',${item.id})">❌ حذف</button></div>`;
         });
     }
 }
