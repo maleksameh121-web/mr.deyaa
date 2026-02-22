@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Beast Platform V8</title>
+<title>Beast Platform V10 12H</title>
 
 <style>
 body{
@@ -88,6 +88,8 @@ nav button{
 <button onclick="show('summaries')">الملخصات</button>
 <button onclick="show('videos')">الفيديوهات</button>
 <button onclick="show('studentWorks')">أعمال الطلاب</button>
+<button onclick="show('meetPage')">رابط الاجتماع</button>
+<button onclick="show('chatPage')">الدردشة</button>
 <button onclick="show('login')">دخول المعلم</button>
 </nav>
 
@@ -99,6 +101,28 @@ nav button{
 <section id="summaries"><h2>📝 الملخصات</h2><div id="summaryList"></div></section>
 <section id="videos"><h2>🎥 الفيديوهات</h2><div id="videoList"></div></section>
 <section id="studentWorks"><h2>👨‍🎓 أعمال الطلاب</h2><div id="studentList"></div></section>
+
+<section id="meetPage">
+<h2>🎥 الاجتماع المباشر</h2>
+<div id="studentMeet"></div>
+</section>
+
+<section id="chatPage">
+<h2>💬 الدردشة</h2>
+
+<!-- حقل اسم الطالب فوق الدردشة -->
+<div style="margin-bottom:10px;">
+<input type="text" id="studentNameInput" placeholder="اكتب اسمك">
+<button onclick="saveStudentName()">حفظ الاسم</button>
+</div>
+
+<!-- صندوق الدردشة -->
+<div id="chatBox" style="height:300px;overflow:auto;border:1px solid #ccc;margin-bottom:10px;padding:10px;"></div>
+
+<!-- حقل الرسالة -->
+<input type="text" id="chatMessage" placeholder="اكتب رسالة">
+<button onclick="sendMessage()">إرسال</button>
+</section>
 
 <section id="login">
 <h2>🔐 دخول المعلم</h2>
@@ -133,168 +157,259 @@ nav button{
 
 <hr>
 
+<h3>🎥 إدارة روابط الاجتماعات</h3>
+<input type="text" id="meetLink" placeholder="حط لينك الاجتماع هنا">
+<button class="action" onclick="saveMeet()">💾 حفظ الرابط</button>
+<div id="teacherMeetList"></div>
+
+<hr>
+
 <h3>🗑 إدارة المحتوى</h3>
-
-<h4>الكتب</h4>
-<div id="manageBooks"></div>
-
-<h4>الملخصات</h4>
-<div id="manageSummaries"></div>
-
-<h4>الفيديوهات</h4>
-<div id="manageVideos"></div>
-
-<h4>أعمال الطلاب</h4>
-<div id="manageStudents"></div>
+<h4>الكتب</h4><div id="manageBooks"></div>
+<h4>الملخصات</h4><div id="manageSummaries"></div>
+<h4>الفيديوهات</h4><div id="manageVideos"></div>
+<h4>أعمال الطلاب</h4><div id="manageStudents"></div>
+<h4>🗑 إدارة الدردشة</h4><div id="manageChat"></div>
 
 <button onclick="logout()" class="delete">خروج</button>
 </section>
 
 <script>
 let db;
-let request=indexedDB.open("BeastDB_V8",1);
+let request=indexedDB.open("BeastDB_V10",1);
 
 request.onupgradeneeded=function(e){
-db=e.target.result;
-["books","summaries","videos","studentWorks"].forEach(store=>{
-if(!db.objectStoreNames.contains(store))
-db.createObjectStore(store,{keyPath:"id",autoIncrement:true});
-});
+    db=e.target.result;
+    ["books","summaries","videos","studentWorks","chat","meet"].forEach(store=>{
+        if(!db.objectStoreNames.contains(store))
+            db.createObjectStore(store,{keyPath:"id",autoIncrement:true});
+    });
 };
 
 request.onsuccess=function(e){
-db=e.target.result;
-refreshAll();
+    db=e.target.result;
+    refreshAll();
 };
 
 function refreshAll(){
-loadDisplay("books","bookList");
-loadDisplay("summaries","summaryList");
-loadDisplay("videos","videoList");
-loadDisplay("studentWorks","studentList");
-loadManage();
+    loadDisplay("books","bookList");
+    loadDisplay("summaries","summaryList");
+    loadDisplay("videos","videoList");
+    loadDisplay("studentWorks","studentList");
+    loadMeet();
+    loadChat();
+    loadManage();
 }
 
 function show(id){
-document.querySelectorAll("section").forEach(s=>s.classList.remove("active"));
-document.getElementById(id).classList.add("active");
+    document.querySelectorAll("section").forEach(s=>s.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
 }
 
+let isTeacher=false;
 function login(){
-if(document.getElementById("pass").value==="1234"){
-show("panel");
-refreshAll();
-}else{
-document.getElementById("msg").innerText="❌ خطأ";
-}
+    if(document.getElementById("pass").value==="1234"){
+        isTeacher=true;
+        show("panel");
+        refreshAll();
+    }else{
+        document.getElementById("msg").innerText="❌ خطأ";
+    }
 }
 
 function logout(){
-show("home");
+    isTeacher=false;
+    show("home");
 }
 
 function saveFile(store,titleId,fileId){
-let title=document.getElementById(titleId).value;
-let file=document.getElementById(fileId).files[0];
-if(!file||!title)return alert("اكمل البيانات");
+    let title=document.getElementById(titleId).value;
+    let file=document.getElementById(fileId).files[0];
+    if(!file||!title) return alert("اكمل البيانات");
 
-let reader=new FileReader();
-reader.onload=function(){
-let tx=db.transaction(store,"readwrite");
-tx.objectStore(store).add({title:title,data:reader.result});
-tx.oncomplete=refreshAll;
-};
-reader.readAsDataURL(file);
+    let reader=new FileReader();
+    reader.onload=function(){
+        let tx=db.transaction(store,"readwrite");
+        tx.objectStore(store).add({title:title,data:reader.result});
+        tx.oncomplete=refreshAll;
+    };
+    reader.readAsDataURL(file);
 }
 
 function saveStudentWork(){
-let name=document.getElementById("studentName").value;
-let title=document.getElementById("workTitle").value;
-let file=document.getElementById("workFile").files[0];
-if(!file||!name||!title)return;
+    let name=document.getElementById("studentName").value;
+    let title=document.getElementById("workTitle").value;
+    let file=document.getElementById("workFile").files[0];
+    if(!file||!name||!title) return;
 
-let reader=new FileReader();
-reader.onload=function(){
-let tx=db.transaction("studentWorks","readwrite");
-tx.objectStore("studentWorks").add({student:name,title:title,data:reader.result});
-tx.oncomplete=refreshAll;
-};
-reader.readAsDataURL(file);
+    let reader=new FileReader();
+    reader.onload=function(){
+        let tx=db.transaction("studentWorks","readwrite");
+        tx.objectStore("studentWorks").add({student:name,title:title,data:reader.result});
+        tx.oncomplete=refreshAll;
+    };
+    reader.readAsDataURL(file);
 }
 
+// Google Meet
+function saveMeet(){
+    let link=document.getElementById("meetLink").value;
+    if(!link) return;
+    let tx=db.transaction("meet","readwrite");
+    tx.objectStore("meet").add({link:link});
+    loadMeet();
+}
+
+function loadMeet(){
+    let tx=db.transaction("meet","readonly");
+    let request=tx.objectStore("meet").getAll();
+    request.onsuccess=function(){
+        let teacherBox=document.getElementById("teacherMeetList");
+        let studentBox=document.getElementById("studentMeet");
+        if(teacherBox) teacherBox.innerHTML="";
+        if(studentBox) studentBox.innerHTML="";
+        request.result.forEach(item=>{
+            if(teacherBox){
+                teacherBox.innerHTML+=`
+                <div class="card">
+                    <a href="${item.link}" target="_blank">${item.link}</a>
+                    <button class="delete" onclick="deleteItem('meet',${item.id})">❌ حذف</button>
+                </div>`;
+            }
+            if(studentBox){
+                studentBox.innerHTML+=`
+                <div class="card">
+                    <a href="${item.link}" target="_blank">🎥 دخول الاجتماع</a>
+                </div>`;
+            }
+        });
+    }
+}
+
+// Chat
+function saveStudentName(){
+    let name=document.getElementById("studentNameInput").value;
+    if(!name) return;
+    localStorage.setItem("studentName",name);
+    alert("تم حفظ الاسم ✅");
+}
+
+function sendMessage(){
+    let name=localStorage.getItem("studentName");
+    let message=document.getElementById("chatMessage").value;
+    if(!name){alert("اكتب اسمك أولاً 👤"); return;}
+    if(!message) return;
+
+    let now = new Date();
+    let hours = now.getHours();
+    let minutes = now.getMinutes().toString().padStart(2,'0');
+    let ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    let time = hours + ":" + minutes + " " + ampm;
+
+    let tx=db.transaction("chat","readwrite");
+    tx.objectStore("chat").add({name:name,message:message,time:time});
+    document.getElementById("chatMessage").value="";
+    loadChat();
+}
+
+function loadChat(){
+    let tx=db.transaction("chat","readonly");
+    let request=tx.objectStore("chat").getAll();
+    request.onsuccess=function(){
+        let box=document.getElementById("chatBox");
+        box.innerHTML="";
+        request.result.forEach(item=>{
+            box.innerHTML+=`
+            <div class="card">
+                <strong>${item.name} (${item.time}):</strong> ${item.message}
+            </div>`;
+        });
+        box.scrollTop=box.scrollHeight;
+    };
+}
+
+// Delete item (for everything)
 function deleteItem(store,id){
-if(!confirm("تأكيد الحذف؟"))return;
-let tx=db.transaction(store,"readwrite");
-tx.objectStore(store).delete(id);
-tx.oncomplete=refreshAll;
+    if(!confirm("تأكيد الحذف؟")) return;
+    let tx=db.transaction(store,"readwrite");
+    tx.objectStore(store).delete(id);
+    tx.oncomplete=refreshAll;
 }
 
-function openFile(data){
-let arr=data.split(',');
-let mime=arr[0].match(/:(.*?);/)[1];
-let bstr=atob(arr[1]);
-let n=bstr.length;
-let u8arr=new Uint8Array(n);
-while(n--){u8arr[n]=bstr.charCodeAt(n);}
-let blob=new Blob([u8arr],{type:mime});
-let url=URL.createObjectURL(blob);
-window.open(url,"_blank");
-}
-
+// Display content for students
 function loadDisplay(store,containerId){
-let tx=db.transaction(store,"readonly");
-let request=tx.objectStore(store).getAll();
-request.onsuccess=function(){
-let container=document.getElementById(containerId);
-container.innerHTML="";
-request.result.forEach(item=>{
-if(store==="videos"){
-container.innerHTML+=`
-<div class="card">
-<h3>${item.title}</h3>
-<video controls src="${item.data}"></video>
-</div>`;
-}else if(store==="studentWorks"){
-container.innerHTML+=`
-<div class="card">
-<h3>${item.student}</h3>
-<p>${item.title}</p>
-<button class="openBtn" onclick="openFile('${item.data}')">فتح</button>
-</div>`;
-}else{
-container.innerHTML+=`
-<div class="card">
-<h3>${item.title}</h3>
-<button class="openBtn" onclick="openFile('${item.data}')">فتح</button>
-</div>`;
-}
-});
-};
+    let tx=db.transaction(store,"readonly");
+    let request=tx.objectStore(store).getAll();
+    request.onsuccess=function(){
+        let container=document.getElementById(containerId);
+        container.innerHTML="";
+        request.result.forEach(item=>{
+            if(store==="videos"){
+                container.innerHTML+=`<div class="card"><h3>${item.title}</h3><video controls src="${item.data}"></video></div>`;
+            } else if(store==="studentWorks"){
+                container.innerHTML+=`<div class="card"><h3>${item.student}</h3><p>${item.title}</p><button class="openBtn" onclick="openFile('${item.data}')">فتح العمل</button></div>`;
+            } else {
+                container.innerHTML+=`<div class="card"><h3>${item.title}</h3><button class="openBtn" onclick="openFile('${item.data}')">فتح الملف</button></div>`;
+            }
+        });
+    }
 }
 
 function loadManage(){
-loadManageStore("books","manageBooks");
-loadManageStore("summaries","manageSummaries");
-loadManageStore("videos","manageVideos");
-loadManageStore("studentWorks","manageStudents");
+    loadManageStore("books","manageBooks");
+    loadManageStore("summaries","manageSummaries");
+    loadManageStore("videos","manageVideos");
+    loadManageStore("studentWorks","manageStudents");
+    loadManageChat();
 }
 
 function loadManageStore(store,containerId){
-let tx=db.transaction(store,"readonly");
-let request=tx.objectStore(store).getAll();
-request.onsuccess=function(){
-let container=document.getElementById(containerId);
-container.innerHTML="";
-request.result.forEach(item=>{
-container.innerHTML+=`
-<div class="card">
-<h4>${store==="studentWorks"?item.student+" - "+item.title:item.title}</h4>
-<button class="delete" onclick="deleteItem('${store}',${item.id})">❌ حذف</button>
-</div>`;
-});
-};
+    let tx=db.transaction(store,"readonly");
+    let request=tx.objectStore(store).getAll();
+    request.onsuccess=function(){
+        let container=document.getElementById(containerId);
+        container.innerHTML="";
+        request.result.forEach(item=>{
+            container.innerHTML+=`
+            <div class="card">
+                <h4>${store==="studentWorks"?item.student+" - "+item.title:item.title}</h4>
+                <button class="delete" onclick="deleteItem('${store}',${item.id})">❌ حذف</button>
+            </div>`;
+        });
+    }
 }
-</script>
 
+function loadManageChat(){
+    let tx=db.transaction("chat","readonly");
+    let request=tx.objectStore("chat").getAll();
+    request.onsuccess=function(){
+        let container=document.getElementById("manageChat");
+        container.innerHTML="";
+        request.result.forEach(item=>{
+            container.innerHTML+=`
+            <div class="card">
+                <strong>${item.name} (${item.time}):</strong> ${item.message}<br>
+                <button class="delete" onclick="deleteItem('chat',${item.id})">❌ حذف</button>
+            </div>`;
+        });
+    }
+}
+
+// Open PDF/video/image
+function openFile(data){
+    let arr=data.split(',');
+    let mime=arr[0].match(/:(.*?);/)[1];
+    let bstr=atob(arr[1]);
+    let n=bstr.length;
+    let u8arr=new Uint8Array(n);
+    while(n--){u8arr[n]=bstr.charCodeAt(n);}
+    let blob=new Blob([u8arr],{type:mime});
+    let url=URL.createObjectURL(blob);
+    window.open(url,"_blank");
+}
+
+</script>
 </body>
 </html>
