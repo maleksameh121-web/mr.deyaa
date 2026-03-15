@@ -1,243 +1,528 @@
-<!DOCTYPE html>
-<html lang="ar">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Beast Platform V13 Ultimate</title>
-<style>
-body{font-family:Arial;direction:rtl;margin:0;background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);color:white;}
-nav{background:black;padding:10px;display:flex;flex-wrap:wrap;justify-content:center;gap:6px;}
-nav button{flex:1 1 40%;max-width:48%;padding:10px;border:none;border-radius:10px;background:cyan;color:black;font-weight:bold;cursor:pointer;}
-section{display:none;padding:15px;}
-.active{display:block;}
-.card{background:white;color:black;padding:15px;margin:10px 0;border-radius:12px;}
-input{width:100%;padding:8px;margin:5px 0;border-radius:8px;border:none;}
-button{padding:8px 12px;border:none;border-radius:8px;cursor:pointer;margin-top:5px;font-weight:bold;}
-.action{background:limegreen;}
-.delete{background:red;color:white;}
-.openBtn{background:#203a43;color:white;}
-@media(min-width:768px){nav button{flex:none;max-width:none;}}
-</style>
-</head>
-<body>
-
-<nav>
-<button onclick="show('home')">الرئيسية</button>
-<button onclick="show('books')">الكتب</button>
-<button onclick="show('summaries')">الملخصات</button>
-<button onclick="show('videos')">الفيديوهات</button>
-<button onclick="show('studentWorks')">أعمال الطلاب</button>
-<button onclick="show('meetPage')">رابط الاجتماع</button>
-<button onclick="show('chatPage')">الدردشة</button>
-<button onclick="show('login')">دخول المعلم</button>
-</nav>
-
-<section id="home" class="active"><h2>🔥 Beast Platform V13 Ultimate 🔥</h2></section>
-
-<section id="books"><h2>📚 الكتب</h2><div id="bookList"></div></section>
-<section id="summaries"><h2>📝 الملخصات</h2><div id="summaryList"></div></section>
-<section id="videos"><h2>🎥 الفيديوهات</h2><div id="videoList"></div></section>
-<section id="studentWorks"><h2>👨‍🎓 أعمال الطلاب</h2><div id="studentList"></div></section>
-
-<section id="meetPage"><h2>🎥 الاجتماع المباشر</h2><div id="studentMeet"></div></section>
-
-<section id="chatPage">
-<h2>💬 الدردشة</h2>
-<div style="margin-bottom:10px;">
-<input type="text" id="studentNameInput" placeholder="اكتب اسمك">
-<button onclick="saveStudentName()">حفظ الاسم</button>
-</div>
-<div id="chatBox" style="height:300px;overflow:auto;border:1px solid #ccc;margin-bottom:10px;padding:10px;"></div>
-<input type="text" id="chatMessage" placeholder="اكتب رسالة">
-<button onclick="sendMessage()">إرسال</button>
-</section>
-
-<section id="login">
-<h2>🔐 دخول المعلم</h2>
-<input type="password" id="pass">
-<button class="action" onclick="login()">دخول</button>
-<p id="msg"></p>
-</section>
-
-<section id="panel">
-<h2>👑 لوحة المعلم</h2>
-
-<h3>إضافة كتاب PDF من Google Drive</h3>
-<input type="text" id="bookTitle" placeholder="اسم الكتاب">
-<input type="text" id="bookLink" placeholder="رابط Google Drive للكتاب">
-<button class="action" onclick="saveLink('books','bookTitle','bookLink')">حفظ الكتاب</button>
-
-<h3>إضافة ملخص PDF من Google Drive</h3>
-<input type="text" id="sumTitle" placeholder="اسم الملخص">
-<input type="text" id="sumLink" placeholder="رابط Google Drive للملخص">
-<button class="action" onclick="saveLink('summaries','sumTitle','sumLink')">حفظ الملخص</button>
-
-<h3>إضافة فيديو من Google Drive</h3>
-<input type="text" id="vidTitle" placeholder="اسم الفيديو">
-<input type="text" id="vidLink" placeholder="رابط Google Drive للفيديو">
-<button class="action" onclick="saveLink('videos','vidTitle','vidLink')">حفظ الفيديو</button>
-
-<h3>إضافة عمل طالب من Google Drive</h3>
-<input type="text" id="studentName" placeholder="اسم الطالب">
-<input type="text" id="workTitle" placeholder="اسم العمل">
-<input type="text" id="workLink" placeholder="رابط Google Drive للعمل">
-<button class="action" onclick="saveStudentWorkLink()">حفظ العمل</button>
-
-<hr>
-
-<h3>🎥 إدارة روابط الاجتماعات</h3>
-<input type="text" id="meetLink" placeholder="رابط الاجتماع">
-<button class="action" onclick="saveMeet()">💾 حفظ الرابط</button>
-<div id="teacherMeetList"></div>
-
-<hr>
-
-<h3>🗑 إدارة المحتوى</h3>
-<h4>الكتب</h4><div id="manageBooks"></div>
-<h4>الملخصات</h4><div id="manageSummaries"></div>
-<h4>الفيديوهات</h4><div id="manageVideos"></div>
-<h4>أعمال الطلاب</h4><div id="manageStudents"></div>
-<h4>🗑 إدارة الدردشة</h4><div id="manageChat"></div>
-
-<button onclick="logout()" class="delete">خروج</button>
-</section>
-
-<script>
-let db;
-let request=indexedDB.open("BeastDB_V13",1);
-request.onupgradeneeded=function(e){
-    db=e.target.result;
-    ["books","summaries","videos","studentWorks","chat","meet"].forEach(store=>{
-        if(!db.objectStoreNames.contains(store))
-            db.createObjectStore(store,{keyPath:"id",autoIncrement:true});
-    });
-};
-request.onsuccess=function(e){db=e.target.result;refreshAll();};
-
-function refreshAll(){
-    loadDisplay('books','bookList');
-    loadDisplay('summaries','summaryList');
-    loadDisplay('videos','videoList');
-    loadDisplay('studentWorks','studentList');
-    loadMeet();
-    loadChat();
-    loadManage();
-}
-
-function show(id){document.querySelectorAll("section").forEach(s=>s.classList.remove("active"));document.getElementById(id).classList.add("active");}
-
-let isTeacher=false;
-function login(){if(document.getElementById("pass").value==="1234"){isTeacher=true;show("panel");refreshAll();}else{document.getElementById("msg").innerText="❌ خطأ";}}
-function logout(){isTeacher=false; show("home");}
-
-function saveLink(store,titleId,linkId){
-    let title=document.getElementById(titleId).value;
-    let link=document.getElementById(linkId).value;
-    if(!title||!link) return alert("اكمل البيانات");
-    let tx=db.transaction(store,"readwrite");
-    tx.objectStore(store).add({title:title,link:link});
-    tx.oncomplete=refreshAll;
-}
-
-function saveStudentWorkLink(){
-    let name=document.getElementById("studentName").value;
-    let title=document.getElementById("workTitle").value;
-    let link=document.getElementById("workLink").value;
-    if(!name||!title||!link) return alert("اكمل البيانات");
-    let tx=db.transaction("studentWorks","readwrite");
-    tx.objectStore("studentWorks").add({student:name,title:title,link:link});
-    tx.oncomplete=refreshAll;
-}
-
-function saveMeet(){
-    let link=document.getElementById("meetLink").value;
-    if(!link) return;
-    let tx=db.transaction("meet","readwrite");
-    tx.objectStore("meet").add({link:link});
-    loadMeet();
-}
-function loadMeet(){
-    let tx=db.transaction("meet","readonly");
-    let request=tx.objectStore("meet").getAll();
-    request.onsuccess=function(){
-        let teacherBox=document.getElementById("teacherMeetList");
-        let studentBox=document.getElementById("studentMeet");
-        if(teacherBox) teacherBox.innerHTML="";
-        if(studentBox) studentBox.innerHTML="";
-        request.result.forEach(item=>{
-            if(teacherBox){teacherBox.innerHTML+=`<div class="card"><a href="${item.link}" target="_blank">${item.link}</a> <button class="delete" onclick="deleteItem('meet',${item.id})">❌ حذف</button></div>`;}
-            if(studentBox){studentBox.innerHTML+=`<div class="card"><a href="${item.link}" target="_blank">🎥 دخول الاجتماع</a></div>`;}
-        });
+<!doctype html>
+<html lang="ar" dir="rtl" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>اختبار الصفات السلبية</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&amp;display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Tajawal', sans-serif; }
+    .question-card {
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+      border-right: 5px solid #1e40af;
     }
-}
+    .option-btn {
+      transition: all 0.3s ease;
+    }
+    .option-btn:hover:not(.selected):not(.correct):not(.wrong) {
+      background: #e0e7ff;
+      border-color: #6366f1;
+    }
+    .option-btn.selected {
+      background: #c7d2fe;
+      border-color: #4f46e5;
+    }
+    .option-btn.correct {
+      background: #bbf7d0;
+      border-color: #16a34a;
+    }
+    .option-btn.wrong {
+      background: #fecaca;
+      border-color: #dc2626;
+    }
+    .result-animation {
+      animation: slideUp 0.5s ease-out;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .badge {
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+  </style>
+  <style>body { box-sizing: border-box; }</style>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" type="text/javascript"></script>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 overflow-auto">
+  <div class="min-h-full w-full p-4 md:p-8">
+   <!-- Header -->
+   <header class="text-center mb-8">
+    <div class="inline-block bg-white/10 backdrop-blur-sm rounded-2xl px-8 py-4 mb-4">
+     <h1 id="quiz-title" class="text-3xl md:text-4xl font-extrabold text-white">اختبار الصفات السلبية</h1>
+    </div>
+    <p class="text-indigo-200 text-lg">اختبر معلوماتك في العقيدة الإسلامية</p>
+    <div id="progress-container" class="mt-6 max-w-md mx-auto">
+     <div class="flex justify-between text-white mb-2">
+      <span id="progress-text">السؤال 1 من 4</span> <span id="score-text">النتيجة: 0</span>
+     </div>
+     <div class="bg-white/20 rounded-full h-3 overflow-hidden">
+      <div id="progress-bar" class="bg-gradient-to-r from-emerald-400 to-teal-400 h-full rounded-full transition-all duration-500" style="width: 25%"></div>
+     </div>
+    </div>
+   </header><!-- Quiz Container -->
+   <main id="quiz-container" class="max-w-4xl mx-auto space-y-6">
+    <!-- Questions will be rendered here -->
+   </main><!-- Results Section -->
+   <div id="results-section" class="hidden max-w-2xl mx-auto text-center result-animation">
+    <div class="bg-white rounded-3xl shadow-2xl p-8 md:p-12">
+     <div id="result-badge" class="badge inline-block text-6xl mb-6">
+      🏆
+     </div>
+     <h2 class="text-3xl font-bold text-gray-800 mb-4">نتيجتك النهائية</h2>
+     <div id="final-score" class="text-6xl font-extrabold text-indigo-600 mb-4">
+      0/0
+     </div>
+     <p id="result-message" class="text-xl text-gray-600 mb-8">أحسنت!</p><button onclick="restartQuiz()" class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-xl text-lg font-bold hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg"> إعادة الاختبار 🔄 </button>
+    </div>
+   </div><!-- Navigation -->
+   <nav id="nav-buttons" class="max-w-4xl mx-auto mt-8 flex justify-between items-center">
+    <button id="prev-btn" onclick="prevQuestion()" class="hidden bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-xl font-bold hover:bg-white/30 transition-all"> → السابق </button>
+    <div class="flex-1"></div><button id="next-btn" onclick="nextQuestion()" class="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-8 py-3 rounded-xl font-bold hover:from-emerald-600 hover:to-teal-600 transition-all shadow-lg"> التالي ← </button> <button id="submit-btn" onclick="showResults()" class="hidden bg-gradient-to-r from-amber-500 to-orange-500 text-white px-8 py-3 rounded-xl font-bold hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg"> عرض النتيجة 📊 </button>
+   </nav>
+  </div>
+  <script>
+    // Quiz Data
+    const questions = [
+      {
+        id: 1,
+        type: 'essay',
+        question: 'س١: ما المقصود بالصفات السلبية؟ وهل هي منحصرة في صفات محددة؟ مع التمثيل، وما الذي يجب علينا معرفته منها؟ مع ذكر الصفات، ولماذا هذه الصفات؟',
+        source: 'الفيوم - ٢٠٢٤',
+        modelAnswer: `<strong>الصفات السلبية:</strong> هي التي تفيد نفي كل معنى لا يليق بذات الله تعالى، وتُسمى بأصول التنزيهات.
 
-function saveStudentName(){let name=document.getElementById("studentNameInput").value;if(!name) return;localStorage.setItem("studentName",name);alert("تم حفظ الاسم ✅");}
-function sendMessage(){
-    let name=localStorage.getItem("studentName");
-    let message=document.getElementById("chatMessage").value;
-    if(!name){alert("اكتب اسمك أولاً 👤"); return;}
-    if(!message) return;
-    let now = new Date();
-    let hours = now.getHours();
-    let minutes = now.getMinutes().toString().padStart(2,'0');
-    let ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12;
-    let time = hours + ":" + minutes + " " + ampm;
-    let tx=db.transaction("chat","readwrite");
-    tx.objectStore("chat").add({name:name,message:message,time:time});
-    document.getElementById("chatMessage").value="";
-    loadChat();
-}
-function loadChat(){let tx=db.transaction("chat","readonly");let request=tx.objectStore("chat").getAll();request.onsuccess=function(){let box=document.getElementById("chatBox");box.innerHTML="";request.result.forEach(item=>{box.innerHTML+=`<div class="card"><strong>${item.name} (${item.time}):</strong> ${item.message}</div>`;});box.scrollTop=box.scrollHeight;}}
+<strong>هل هي منحصرة؟</strong> لا، الصفات السلبية غير منحصرة في صفات محددة؛ لأن ما لا يليق بالله تعالى كثير وغير محصور.
 
-function deleteItem(store,id){if(!confirm("تأكيد الحذف؟")) return; let tx=db.transaction(store,"readwrite"); tx.objectStore(store).delete(id); tx.oncomplete=refreshAll;}
+<strong>مثال:</strong> نفي الظلم، نفي العجز، نفي الجهل.
 
-function loadDisplay(store,containerId){
-    let tx=db.transaction(store,"readonly");
-    let request=tx.objectStore(store).getAll();
-    request.onsuccess=function(){
-        let container=document.getElementById(containerId);
-        container.innerHTML="";
-        request.result.forEach(item=>{
-            if(store==="videos"||store==="books"||store==="summaries"){
-                container.innerHTML+=`<div class="card"><h3>${item.title}</h3><button class="openBtn" onclick="window.open('${item.link}','_blank')">فتح الملف</button></div>`;
-            } else if(store==="studentWorks"){
-                container.innerHTML+=`<div class="card"><h3>${item.student}</h3><p>${item.title}</p><button class="openBtn" onclick="window.open('${item.link}','_blank')">فتح العمل</button></div>`;
+<strong>الصفات الواجب معرفتها تفصيلاً (خمس صفات):</strong>
+١- القِدَم
+٢- البقاء
+٣- الوحدانية
+٤- المخالفة للحوادث
+٥- القيام بالنفس
+
+<strong>سبب اختيار هذه الصفات:</strong> لأنها أصول التنزيهات التي ترجع إليها جميع الصفات السلبية الأخرى.`
+      },
+      {
+        id: 2,
+        type: 'essay',
+        question: 'س٢: علل: وجوب معرفة خمس صفات سلبية تفصيلًا.',
+        source: 'القليوبية - ٢٠٢٤',
+        modelAnswer: `<strong>التعليل:</strong> وجب علينا معرفة خمس صفات سلبية تفصيلاً لأنها:
+
+١- <strong>أصول التنزيهات:</strong> هذه الصفات الخمس هي الأساس الذي ترجع إليه جميع الصفات السلبية الأخرى.
+
+٢- <strong>شمولها لكل ما لا يليق بالله:</strong> بمعرفتها يُعرف كل ما يجب نفيه عن الله تعالى.
+
+٣- <strong>الصفات الخمس هي:</strong> القِدَم، البقاء، الوحدانية، المخالفة للحوادث، القيام بالنفس.`
+      },
+      {
+        id: 3,
+        type: 'mcq',
+        question: 'س٣: تخير الإجابة الصحيحة:',
+        subQuestions: [
+          {
+            text: '١- من الصفات السلبية:',
+            source: 'كفر الشيخ - ٢٠٢٤',
+            options: ['القدرة', 'الوحدانية', 'السمع'],
+            correct: 1
+          },
+          {
+            text: '٢- الصفات السلبية أو التنزيهية .................... صفات.',
+            source: 'القاهرة - ٢٠٢٣',
+            options: ['سبع', 'خمس', 'تسع'],
+            correct: 1
+          },
+          {
+            text: '٣- الواجب علينا معرفته من الصفات السلبية تفصيلاً:',
+            source: 'المنوفية - ٢٠٢٢',
+            options: ['ثلاث صفات', 'أربع صفات', 'خمس صفات'],
+            correct: 2
+          }
+        ]
+      },
+      {
+        id: 4,
+        type: 'truefalse',
+        question: 'س٤: ضع علامة (✓) أو علامة (✗) مع تصحيح الخطأ:',
+        statements: [
+          {
+            text: '١- الصفات السلبية سبع صفات.',
+            source: 'الغربية - ٢٠٢٤',
+            correct: false,
+            correction: 'خطأ - الصفات السلبية خمس صفات'
+          },
+          {
+            text: '٢- وجب علينا معرفة خمس من الصفات السلبية تفصيلًا.',
+            source: 'كفر الشيخ - ٢٠٢٤',
+            correct: true,
+            correction: ''
+          },
+          {
+            text: '٣- الصفات السلبية هي التي تفيد نفي كل معنى لا يليق بالله تعالى.',
+            source: 'المنيا - ٢٠٢٤',
+            correct: true,
+            correction: ''
+          },
+          {
+            text: '٤- من الصفات السلبية وجود الله ﷻ.',
+            source: 'بني سويف - ٢٠٢٣',
+            correct: false,
+            correction: 'خطأ - الوجود من الصفات النفسية وليس السلبية'
+          },
+          {
+            text: '٥- من الصفات السلبية البقاء والمخالفة للحوادث والقيام بالنفس.',
+            source: 'سوهاج - ٢٠٢٢',
+            correct: true,
+            correction: ''
+          },
+          {
+            text: '٦- تُسمى الصفات السلبية بأصول التنزيهات.',
+            source: '',
+            correct: true,
+            correction: ''
+          }
+        ]
+      }
+    ];
+
+    let currentQuestion = 0;
+    let score = 0;
+    let answers = {};
+
+    const defaultConfig = {
+      quiz_title: 'اختبار الصفات السلبية',
+      primary_color: '#1e40af',
+      secondary_color: '#7c3aed',
+      accent_color: '#10b981',
+      text_color: '#1f2937',
+      background_color: '#312e81'
+    };
+
+    let config = { ...defaultConfig };
+
+    // Initialize SDK
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange: async (newConfig) => {
+          config = { ...defaultConfig, ...newConfig };
+          applyConfig();
+        },
+        mapToCapabilities: (cfg) => ({
+          recolorables: [
+            {
+              get: () => cfg.background_color || defaultConfig.background_color,
+              set: (v) => { cfg.background_color = v; window.elementSdk.setConfig({ background_color: v }); }
+            },
+            {
+              get: () => cfg.primary_color || defaultConfig.primary_color,
+              set: (v) => { cfg.primary_color = v; window.elementSdk.setConfig({ primary_color: v }); }
+            },
+            {
+              get: () => cfg.accent_color || defaultConfig.accent_color,
+              set: (v) => { cfg.accent_color = v; window.elementSdk.setConfig({ accent_color: v }); }
             }
-        });
+          ],
+          borderables: [],
+          fontEditable: undefined,
+          fontSizeable: undefined
+        }),
+        mapToEditPanelValues: (cfg) => new Map([
+          ['quiz_title', cfg.quiz_title || defaultConfig.quiz_title]
+        ])
+      });
     }
-}
 
-function loadManage(){
-    loadManageStore("books","manageBooks");
-    loadManageStore("summaries","manageSummaries");
-    loadManageStore("videos","manageVideos");
-    loadManageStore("studentWorks","manageStudents");
-    loadManageChat();
-}
-function loadManageStore(store,containerId){
-    let tx=db.transaction(store,"readonly");
-    let request=tx.objectStore(store).getAll();
-    request.onsuccess=function(){
-        let container=document.getElementById(containerId);
-        container.innerHTML="";
-        request.result.forEach(item=>{
-            container.innerHTML+=`<div class="card"><h4>${store==="studentWorks"?item.student+" - "+item.title:item.title}</h4><button class="delete" onclick="deleteItem('${store}',${item.id})">❌ حذف</button></div>`;
-        });
+    function applyConfig() {
+      document.getElementById('quiz-title').textContent = config.quiz_title || defaultConfig.quiz_title;
     }
-}
-function loadManageChat(){
-    let tx=db.transaction("chat","readonly");
-    let request=tx.objectStore("chat").getAll();
-    request.onsuccess=function(){
-        let container=document.getElementById("manageChat");
-        container.innerHTML="";
-        request.result.forEach(item=>{
-            container.innerHTML+=`<div class="card"><strong>${item.name} (${item.time}):</strong> ${item.message}<br><button class="delete" onclick="deleteItem('chat',${item.id})">❌ حذف</button></div>`;
-        });
+
+    function renderQuestion() {
+      const container = document.getElementById('quiz-container');
+      const question = questions[currentQuestion];
+      
+      let html = '';
+      
+      if (question.type === 'essay') {
+        html = renderEssayQuestion(question);
+      } else if (question.type === 'mcq') {
+        html = renderMCQQuestion(question);
+      } else if (question.type === 'truefalse') {
+        html = renderTrueFalseQuestion(question);
+      }
+      
+      container.innerHTML = html;
+      updateProgress();
+      updateNavigation();
     }
-}
-</script>
-</body>
+
+    function renderEssayQuestion(q) {
+      const savedAnswer = answers[q.id] || '';
+      const showAnswer = answers[`${q.id}_shown`] || false;
+      
+      return `
+        <div class="question-card rounded-2xl shadow-xl p-6 md:p-8">
+          <div class="flex items-start gap-4 mb-6">
+            <span class="bg-indigo-600 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shrink-0">${q.id}</span>
+            <div class="flex-1">
+              <p class="text-gray-800 text-lg font-medium leading-relaxed">${q.question}</p>
+              ${q.source ? `<span class="inline-block mt-2 bg-indigo-100 text-indigo-700 text-sm px-3 py-1 rounded-full">${q.source}</span>` : ''}
+            </div>
+          </div>
+          
+          <textarea 
+            id="essay-${q.id}" 
+            class="w-full h-40 p-4 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none resize-none text-gray-700"
+            placeholder="اكتب إجابتك هنا..."
+            onchange="saveEssayAnswer(${q.id})"
+          >${savedAnswer}</textarea>
+          
+
+        </div>
+      `;
+    }
+
+    function renderMCQQuestion(q) {
+      let subQuestionsHTML = q.subQuestions.map((sq, idx) => {
+        const answerId = `${q.id}_${idx}`;
+        const selectedOption = answers[answerId];
+        const isAnswered = selectedOption !== undefined;
+        
+        return `
+          <div class="bg-gray-50 rounded-xl p-5 mb-4">
+            <p class="text-gray-800 font-medium mb-3">${sq.text}</p>
+            ${sq.source ? `<span class="inline-block mb-3 bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded-full">${sq.source}</span>` : ''}
+            <div class="grid gap-2">
+              ${sq.options.map((opt, optIdx) => {
+                let classes = 'option-btn w-full text-right p-3 border-2 rounded-lg transition-all font-medium';
+                if (isAnswered) {
+                  if (optIdx === sq.correct) {
+                    classes += ' correct';
+                  } else if (optIdx === selectedOption) {
+                    classes += ' wrong';
+                  } else {
+                    classes += ' border-gray-200 bg-white';
+                  }
+                } else {
+                  classes += ' border-gray-200 bg-white hover:border-indigo-400';
+                }
+                return `
+                  <button 
+                    class="${classes}"
+                    onclick="selectMCQOption(${q.id}, ${idx}, ${optIdx}, ${sq.correct})"
+                    ${isAnswered ? 'disabled' : ''}
+                  >
+                    ${opt}
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="question-card rounded-2xl shadow-xl p-6 md:p-8">
+          <div class="flex items-start gap-4 mb-6">
+            <span class="bg-indigo-600 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shrink-0">${q.id}</span>
+            <p class="text-gray-800 text-lg font-medium">${q.question}</p>
+          </div>
+          ${subQuestionsHTML}
+        </div>
+      `;
+    }
+
+    function renderTrueFalseQuestion(q) {
+      let statementsHTML = q.statements.map((st, idx) => {
+        const answerId = `${q.id}_${idx}`;
+        const selectedAnswer = answers[answerId];
+        const isAnswered = selectedAnswer !== undefined;
+        
+        let resultHTML = '';
+        if (isAnswered) {
+          const isCorrect = selectedAnswer === st.correct;
+          if (isCorrect) {
+            resultHTML = `<span class="text-emerald-600 font-bold">✓ إجابة صحيحة</span>`;
+          } else {
+            resultHTML = `<span class="text-red-600 font-bold">✗ إجابة خاطئة</span>
+              ${st.correction ? `<p class="text-emerald-600 mt-1">${st.correction}</p>` : ''}`;
+          }
+        }
+
+        return `
+          <div class="bg-gray-50 rounded-xl p-5 mb-4">
+            <p class="text-gray-800 font-medium mb-2">${st.text}</p>
+            ${st.source ? `<span class="inline-block mb-3 bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded-full">${st.source}</span>` : ''}
+            <div class="flex gap-3 mt-3">
+              <button 
+                class="option-btn flex-1 p-3 border-2 rounded-lg font-bold transition-all ${isAnswered ? (st.correct ? 'correct' : (selectedAnswer === true ? 'wrong' : 'border-gray-200 bg-white')) : 'border-gray-200 bg-white'}"
+                onclick="selectTrueFalse(${q.id}, ${idx}, true, ${st.correct})"
+                ${isAnswered ? 'disabled' : ''}
+              >
+                ✓ صواب
+              </button>
+              <button 
+                class="option-btn flex-1 p-3 border-2 rounded-lg font-bold transition-all ${isAnswered ? (!st.correct ? 'correct' : (selectedAnswer === false ? 'wrong' : 'border-gray-200 bg-white')) : 'border-gray-200 bg-white'}"
+                onclick="selectTrueFalse(${q.id}, ${idx}, false, ${st.correct})"
+                ${isAnswered ? 'disabled' : ''}
+              >
+                ✗ خطأ
+              </button>
+            </div>
+            ${resultHTML ? `<div class="mt-3">${resultHTML}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="question-card rounded-2xl shadow-xl p-6 md:p-8">
+          <div class="flex items-start gap-4 mb-6">
+            <span class="bg-indigo-600 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shrink-0">${q.id}</span>
+            <p class="text-gray-800 text-lg font-medium">${q.question}</p>
+          </div>
+          ${statementsHTML}
+        </div>
+      `;
+    }
+
+    function saveEssayAnswer(qId) {
+      const textarea = document.getElementById(`essay-${qId}`);
+      answers[qId] = textarea.value;
+    }
+
+    function toggleModelAnswer(qId) {
+      const modelAnswerDiv = document.getElementById(`model-answer-${qId}`);
+      const isHidden = modelAnswerDiv.classList.contains('hidden');
+      modelAnswerDiv.classList.toggle('hidden');
+      answers[`${qId}_shown`] = isHidden;
+      
+      if (isHidden && !answers[`${qId}_scored`]) {
+        score++;
+        answers[`${qId}_scored`] = true;
+        updateProgress();
+      }
+      
+      renderQuestion();
+    }
+
+    function selectMCQOption(qId, subIdx, optIdx, correctIdx) {
+      const answerId = `${qId}_${subIdx}`;
+      if (answers[answerId] !== undefined) return;
+      
+      answers[answerId] = optIdx;
+      if (optIdx === correctIdx) {
+        score++;
+      }
+      updateProgress();
+      renderQuestion();
+    }
+
+    function selectTrueFalse(qId, stIdx, selected, correct) {
+      const answerId = `${qId}_${stIdx}`;
+      if (answers[answerId] !== undefined) return;
+      
+      answers[answerId] = selected;
+      if (selected === correct) {
+        score++;
+      }
+      updateProgress();
+      renderQuestion();
+    }
+
+    function updateProgress() {
+      const totalItems = 2 + 3 + 6; // 2 essay, 3 MCQ, 6 T/F
+      document.getElementById('progress-text').textContent = `السؤال ${currentQuestion + 1} من ${questions.length}`;
+      document.getElementById('score-text').textContent = `النتيجة: ${score}`;
+      document.getElementById('progress-bar').style.width = `${((currentQuestion + 1) / questions.length) * 100}%`;
+    }
+
+    function updateNavigation() {
+      const prevBtn = document.getElementById('prev-btn');
+      const nextBtn = document.getElementById('next-btn');
+      const submitBtn = document.getElementById('submit-btn');
+      
+      prevBtn.classList.toggle('hidden', currentQuestion === 0);
+      
+      if (currentQuestion === questions.length - 1) {
+        nextBtn.classList.add('hidden');
+        submitBtn.classList.remove('hidden');
+      } else {
+        nextBtn.classList.remove('hidden');
+        submitBtn.classList.add('hidden');
+      }
+    }
+
+    function nextQuestion() {
+      if (currentQuestion < questions.length - 1) {
+        currentQuestion++;
+        renderQuestion();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function prevQuestion() {
+      if (currentQuestion > 0) {
+        currentQuestion--;
+        renderQuestion();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function showResults() {
+      const totalItems = 2 + 3 + 6;
+      document.getElementById('quiz-container').classList.add('hidden');
+      document.getElementById('nav-buttons').classList.add('hidden');
+      document.getElementById('progress-container').classList.add('hidden');
+      document.getElementById('results-section').classList.remove('hidden');
+      
+      document.getElementById('final-score').textContent = `${score}/${totalItems}`;
+      
+      const percentage = (score / totalItems) * 100;
+      let badge, message;
+      
+      if (percentage >= 90) {
+        badge = '🏆';
+        message = 'ممتاز! أنت متفوق في العقيدة الإسلامية';
+      } else if (percentage >= 70) {
+        badge = '🌟';
+        message = 'جيد جداً! استمر في التعلم';
+      } else if (percentage >= 50) {
+        badge = '📚';
+        message = 'جيد! راجع الدرس مرة أخرى';
+      } else {
+        badge = '💪';
+        message = 'حاول مرة أخرى بعد مراجعة الدرس';
+      }
+      
+      document.getElementById('result-badge').textContent = badge;
+      document.getElementById('result-message').textContent = message;
+    }
+
+    function restartQuiz() {
+      currentQuestion = 0;
+      score = 0;
+      answers = {};
+      
+      document.getElementById('quiz-container').classList.remove('hidden');
+      document.getElementById('nav-buttons').classList.remove('hidden');
+      document.getElementById('progress-container').classList.remove('hidden');
+      document.getElementById('results-section').classList.add('hidden');
+      
+      renderQuestion();
+    }
+
+    // Initialize
+    renderQuestion();
+    applyConfig();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9dc74bb581d9e17b',t:'MTc3MzUzMzQzMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
